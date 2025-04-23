@@ -5,6 +5,8 @@ import (
 	"log"
 
 	"github.com/phnthnhnm/peril/internal/gamelogic"
+	"github.com/phnthnhnm/peril/internal/pubsub"
+	"github.com/phnthnhnm/peril/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -29,6 +31,18 @@ func main() {
 		log.Fatalf("could not get username: %v", err)
 	}
 	gs := gamelogic.NewGameState(username)
+
+	err = pubsub.SubscribeJSON(
+		conn,
+		routing.ExchangePerilDirect,
+		routing.PauseKey+"."+gs.GetUsername(),
+		routing.PauseKey,
+		pubsub.SimpleQueueTransient,
+		handlerPause(gs),
+	)
+	if err != nil {
+		log.Fatalf("could not subscribe to pause: %v", err)
+	}
 
 	for {
 		words := gamelogic.GetInput()
