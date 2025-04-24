@@ -9,9 +9,17 @@ import (
 
 type SimpleQueueType int
 
+type Acktype int
+
 const (
 	SimpleQueueDurable SimpleQueueType = iota
 	SimpleQueueTransient
+)
+
+const (
+	Ack Acktype = iota
+	NackDiscard
+	NackRequeue
 )
 
 func DeclareAndBind(
@@ -57,7 +65,7 @@ func SubscribeJSON[T any](
 	queueName,
 	key string,
 	simpleQueueType SimpleQueueType,
-	handler func(T),
+	handler func(T) Acktype,
 ) error {
 	ch, queue, err := DeclareAndBind(conn, exchange, queueName, key, simpleQueueType)
 	if err != nil {
@@ -96,11 +104,28 @@ func SubscribeJSON[T any](
 				fmt.Printf("could not unmarshal message: %v\n", err)
 				continue
 			}
-			handler(target)
-			err = msg.Ack(false)
-			if err != nil {
-				fmt.Printf("could not ack message: %v\n", err)
-				continue
+			switch handler(target) {
+			case Ack:
+				err := msg.Ack(false)
+				if err != nil {
+					fmt.Printf("could not ack message: %v\n	", err)
+					continue
+				}
+				fmt.Println("Ack")
+			case NackDiscard:
+				err := msg.Nack(false, false)
+				if err != nil {
+					fmt.Printf("could not nack & discard message: %v\n", err)
+					continue
+				}
+				fmt.Println("NackDiscard")
+			case NackRequeue:
+				err := msg.Nack(false, true)
+				if err != nil {
+					fmt.Printf("could not nack & requeue message: %v\n", err)
+					continue
+				}
+				fmt.Println("NackRequeue")
 			}
 		}
 	}()
