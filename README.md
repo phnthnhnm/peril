@@ -1,4 +1,4 @@
-# Peril: A Risk-Inspired Strategy Game
+# Peril
 
 Peril is a make-believe clone of the classic strategy game "Risk," designed to demonstrate the use of RabbitMQ and Docker in a distributed system. This project includes a client-server architecture where players interact with the game via commands, and the server manages the game state and logs.
 
